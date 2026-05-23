@@ -82,7 +82,8 @@ class neuronetwork {
 				}
 
 				network[index][j].v_in = sum + network[index][j].b;
-				network[index][j].v_out = sigmoid(network[index][j].v_in);
+				if (index == layers - 1) network[index][j].v_out = network[index][j].v_in;
+				else network[index][j].v_out = sigmoid(network[index][j].v_in);
 			}
 		}
 		void count_all() {
@@ -95,9 +96,7 @@ class neuronetwork {
 			int t1 = network[layers - 1].size();
 			if (t1 != waited.size()) return;
 			for (int i = 0; i < network[layers - 1].size(); i++) {
-				double temp = waited[i] - network[layers - 1][i].v_out;
-				double dxdy = proizvod(network[layers - 1][i].v_out);
-				network[layers - 1][i].delta = temp * dxdy;
+				network[layers - 1][i].delta = waited[i] - network[layers - 1][i].v_out;
 			}
 		}
 

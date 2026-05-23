@@ -23,5 +23,8 @@
     <ClInclude Include="ClassificationNetwork.hpp">
       <Filter>Resource Files</Filter>
     </ClInclude>
+    <ClInclude Include="RegressionNetwork.hpp">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
