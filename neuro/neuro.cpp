@@ -2,6 +2,10 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <algorithm>
 
 struct connection
 {
@@ -43,13 +47,22 @@ class neuronetwork {
 			for (int i = 0; i < layers; i++) {
 				std::vector<neuron> layer;
 				for (int j = 0; j < layer_sizes[i]; j++) {
-					layer.push_back(neuron{ 0.0, 0.0, 0.0, {} });
+					layer.push_back(neuron{ 0.0, 0.0, 0.0,0.0, {} });
 				}
 				network.push_back(layer);
 			}
 			get_ready();
 		}
 		
+		void get_ready_for_new() {
+			for (int i = 1; i < layers; i++) {
+				for (int j = 0; j < network[i].size(); j++) {
+					network[i][j].delta = 0.0;
+					
+				}
+			}
+		}
+
 		void initialize_first_layer(std::vector<double> input) {
 			if (input.size() != network[0].size()) return;
 			for (int j = 0; j < network[0].size(); j++) {
@@ -78,9 +91,48 @@ class neuronetwork {
 			}
 		}
 
-		
+		void count_last_delta(std::vector<double> waited) {
+			int t1 = network[layers - 1].size();
+			if (t1 != waited.size()) return;
+			for (int i = 0; i < network[layers - 1].size(); i++) {
+				double temp = waited[i] - network[layers - 1][i].v_out;
+				double dxdy = proizvod(network[layers - 1][i].v_out);
+				network[layers - 1][i].delta = temp * dxdy;
+			}
+		}
+
+		void count_all_deltas(std::vector<double> waited) {
+			get_ready_for_new(); 
+			count_last_delta(waited);
+			for (int i = layers - 2; i > 0; i--) {
+				for (int next_i = 0; next_i < network[i + 1].size(); ++next_i) {
+					for (int j = 0; j < network[i + 1][next_i].connections.size(); ++j) {
+						connection t = network[i + 1][next_i].connections[j];
+						network[i][t.from_j].delta += network[i + 1][next_i].delta * t.weight;
+					}
+				}
+				for (int j = 0; j < network[i].size(); ++j) {
+					network[i][j].delta *= proizvod(network[i][j].v_out);
+				}
+			}
+		}
+
+		void update_weights() {
+			for (int i = 1; i < layers; i++) {
+				for (int j = 0; j < network[i].size(); j++) {
+					network[i][j].b += network[i][j].delta * lr;
+					for (int k = 0; k < network[i][j].connections.size(); k++) {
+						network[i][j].connections[k].weight += network[i][j].delta * network[i - 1][network[i][j].connections[k].from_j].v_out * lr;
+					}
+				}
+			}
+		}
 
 
+		double proizvod(double v_out)
+		{
+			return v_out * (1 - v_out);
+		}
 
 		double sigmoid(double v_in)
 		{
@@ -89,9 +141,57 @@ class neuronetwork {
 
 };
 
+std::vector<std::vector<double>> loadCSV(const std::string& filename, bool hasHeader = true) {
+	std::vector<std::vector<double>> data;
+	std::ifstream file(filename);
+
+	if (!file.is_open()) {
+		std::cerr << "Error: Could not open file " << filename << std::endl;
+		return data;
+	}
+
+	std::string line;
+
+	// Пропускаем заголовок
+	if (hasHeader) {
+		std::getline(file, line);
+	}
+
+	while (std::getline(file, line)) {
+		// Очистка от спецсимволов Windows (\r)
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+
+		if (line.empty()) continue;
+
+		std::vector<double> row;
+		std::stringstream ss(line);
+		std::string value;
+
+		// Читаем значения, разделенные запятой
+		while (std::getline(ss, value, ',')) {
+			try {
+				// Преобразуем в double (std::stod)
+				row.push_back(std::stod(value));
+			}
+			catch (...) {
+				// Если попался текст или пустая ячейка — ставим 0.0
+				row.push_back(0.0);
+			}
+		}
+
+		data.push_back(row);
+	}
+
+	file.close();
+	return data;
+}
 
 int main()
 {
+	std::vector<std::vector<double>> X_train = loadCSV("X_train.csv");
+	std::vector<std::vector<double>> y_train = loadCSV("y_train.csv");
+	std::vector<std::vector<double>> X_test = loadCSV("X_test.csv");
+	std::vector<std::vector<double>> y_test = loadCSV("y_test.csv");
 	
 }
 
