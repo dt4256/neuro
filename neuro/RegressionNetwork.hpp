@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
+#include <windows.h>
 
 namespace reg {
 
@@ -30,13 +31,13 @@ namespace reg {
 	class neuronetwork {
 	private:
 		int layers;
-		double lr;
+		
 
 		void get_ready() {
 			for (int i = 1; i < layers; i++) {
 				for (int j = 0; j < (int)network[i].size(); j++) {
 					for (int prev_j = 0; prev_j < (int)network[i - 1].size(); prev_j++) {
-						double rand_w = ((double)rand() / RAND_MAX) * 2 - 1;
+						double rand_w = (((double)rand() / RAND_MAX) * 0.2) - 0.1;
 						network[i][j].connections.push_back(connection{ prev_j, rand_w });
 					}
 				}
@@ -44,6 +45,7 @@ namespace reg {
 		}
 
 	public:
+		double lr;
 		std::vector<std::vector<neuron>> network;
 		neuronetwork(std::vector<int> layer_sizes, double lr = 0.0006) {
 			this->lr = lr;
@@ -66,7 +68,7 @@ namespace reg {
 			}
 		}
 
-		void initialize_first_layer(std::vector<double> input) {
+		void initialize_first_layer(const std::vector<double>& input) {
 			if (input.size() != network[0].size()) return;
 			for (int j = 0; j < (int)network[0].size(); j++) {
 				network[0][j].v_out = input[j];
@@ -85,8 +87,6 @@ namespace reg {
 				}
 
 				network[index][j].v_in = sum + network[index][j].b;
-
-				// Логика регрессии: на последнем слое нет сигмоиды
 				if (index == layers - 1) network[index][j].v_out = network[index][j].v_in;
 				else network[index][j].v_out = sigmoid(network[index][j].v_in);
 			}
@@ -102,7 +102,6 @@ namespace reg {
 			int t1 = (int)network[layers - 1].size();
 			if (t1 != (int)waited.size()) return;
 			for (int i = 0; i < (int)network[layers - 1].size(); i++) {
-				// Дельта для регрессии (производная линейной функции = 1)
 				network[layers - 1][i].delta = waited[i] - network[layers - 1][i].v_out;
 			}
 		}

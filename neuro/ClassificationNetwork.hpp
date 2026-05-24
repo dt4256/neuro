@@ -39,7 +39,7 @@ namespace cls {
 			for (int i = 1; i < layers; i++) {
 				for (int j = 0; j < (int)network[i].size(); j++) {
 					for (int prev_j = 0; prev_j < (int)network[i - 1].size(); prev_j++) {
-						double rand_w = ((double)rand() / RAND_MAX) * 2 - 1;
+						double rand_w = (((double)rand() / RAND_MAX) * 0.2) - 0.1;
 						network[i][j].connections.push_back(connection{ prev_j, rand_w });
 					}
 				}
